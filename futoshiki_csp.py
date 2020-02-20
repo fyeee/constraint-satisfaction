@@ -34,8 +34,11 @@ def futoshiki_csp_model_1(futo_grid):
     vars = []
     for i in range(size):
         row = []
-        for j in range(0, size, 2):
-            row.append(Variable('Q({0}, {1})'.format(i + 1, j // 2 + 1), dom))
+        for j in range(0, size * 2, 2):
+            var = Variable('Q({0}, {1})'.format(i + 1, j // 2 + 1), dom)
+            if futo_grid[i][j] != 0:
+                var.assign(futo_grid[i][j])
+            row.append(var)
         vars.append(row)
     cons = []
     # row inequality constraints
@@ -61,7 +64,7 @@ def futoshiki_csp_model_1(futo_grid):
     for col in range(size):
         for i in range(size):
             for j in range(i + 1, size):
-                con = Constraint("C(Q({1}, {0}),Q({1}, {2})".format(col + 1, i + 1, j + 1),
+                con = Constraint("C(Q({1}, {0}),Q({2}, {0})".format(col + 1, i + 1, j + 1),
                                  [vars[i][col], vars[j][col]])
                 sat_tuples = []
                 for t in itertools.product(dom, dom):
@@ -69,8 +72,77 @@ def futoshiki_csp_model_1(futo_grid):
                         sat_tuples.append(t)
                 con.add_satisfying_tuples(sat_tuples)
                 cons.append(con)
+    flatten_vars = []
+    for row in vars:
+        flatten_vars += row
+    csp = CSP("futoshiki-{0}".format(size), flatten_vars)
+    for c in cons:
+        csp.add_constraint(c)
+    return csp, vars
 
 
 def futoshiki_csp_model_2(futo_grid):
-    ##IMPLEMENT 
-    pass
+    size = len(futo_grid)
+    dom = []
+    for i in range(1, size + 1):
+        dom.append(i)
+    vars = []
+    for i in range(size):
+        row = []
+        for j in range(0, size * 2, 2):
+            var = Variable('Q({0}, {1})'.format(i + 1, j // 2 + 1), dom)
+            if futo_grid[i][j] != 0:
+                var.assign(futo_grid[i][j])
+            row.append(var)
+        vars.append(row)
+    cons = []
+    doms = [dom] * size
+    # row all-diff constraints
+    for i, row in enumerate(vars):
+        con = Constraint("Row{0}".format(i + 1), row)
+        sat_tuples = []
+        for t in itertools.product(*doms):
+            if len(set(t)) == len(t):
+                sat_tuples.append(t)
+        con.add_satisfying_tuples(sat_tuples)
+        cons.append(con)
+    # column all-diff constraints
+    for i in range(size):
+        column = [vars[j][i] for j in range(size)]
+        con = Constraint("Column{0}".format(i + 1), column)
+        sat_tuples = []
+        for t in itertools.product(*doms):
+            if len(set(t)) == len(t):
+                sat_tuples.append(t)
+        con.add_satisfying_tuples(sat_tuples)
+        cons.append(con)
+    # inequality constraints
+    for i in range(size):
+        for j in range(len(futo_grid[0])):
+            if futo_grid[i][j] == ">":
+                con = Constraint("Q({0},{1}), Q({0},{2})".format(i, j - 1, j + 1),
+                                 [vars[i][(j - 1) // 2], vars[i][(j + 1) // 2]])
+                sat_tuples = []
+                for t in itertools.product(dom, dom):
+                    if t[0] != t[1]:
+                        if t[0] > t[1]:
+                            sat_tuples.append(t)
+                con.add_satisfying_tuples(sat_tuples)
+                cons.append(con)
+            elif futo_grid[i][j] == "<":
+                con = Constraint("Q({0},{1}), Q({0},{2})".format(i, j - 1, j + 1),
+                                 [vars[i][(j - 1) // 2], vars[i][(j + 1) // 2]])
+                sat_tuples = []
+                for t in itertools.product(dom, dom):
+                    if t[0] != t[1]:
+                        if t[0] < t[1]:
+                            sat_tuples.append(t)
+                con.add_satisfying_tuples(sat_tuples)
+                cons.append(con)
+    flatten_vars = []
+    for row in vars:
+        flatten_vars += row
+    csp = CSP("futoshiki-{0}".format(size), flatten_vars)
+    for c in cons:
+        csp.add_constraint(c)
+    return csp, vars

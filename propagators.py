@@ -95,16 +95,20 @@ def prop_FC(csp, newVar=None):
        only one uninstantiated variable. Remember to keep
        track of all pruned variable,value pairs and return """
     if not newVar:
-        valid = True
-        prune_vals = []
-        for c in csp.get_all_cons():
-            if c.get_n_unasgn() == 1:
-                var = c.get_unasgn_vars()
-                for val in var.cur_domain():
-                    if not c.has_support(var, val):
-                        valid = False
-                        prune_vals.append((var, val))
-        return valid, prune_vals
+        cons = csp.get_all_cons()
+    else:
+        cons = csp.get_cons_with_var(newVar)
+    prune_vals = []
+    for c in cons:
+        if c.get_n_unasgn() == 1:
+            var = c.get_unasgn_vars()[0]
+            for val in var.cur_domain():
+                if not c.has_support(var, val):
+                    var.prune_value(val)
+                    prune_vals.append((var, val))
+            if var.cur_domain_size() == 0:
+                return False, prune_vals
+    return True, prune_vals
 
 
 def prop_GAC(csp, newVar=None):
@@ -112,8 +116,29 @@ def prop_GAC(csp, newVar=None):
        processing all constraints. Otherwise we do GAC enforce with
        constraints containing newVar on GAC Queue"""
     # IMPLEMENT
+    if not newVar:
+        cons = csp.get_all_cons()
+    else:
+        cons = csp.get_cons_with_var(newVar)
+    prune_vals = []
+    while cons:
+        c = cons.pop(0)
+        vars = c.get_scope()
+        for var in vars:
+            for val in var.cur_domain():
+                if not c.has_support(var, val):
+                    var.prune_value(val)
+                    prune_vals.append((var, val))
+                    for con in csp.get_cons_with_var(var):
+                        if con not in cons and con != c:
+                            cons.append(con)
+            if var.cur_domain_size() == 0:
+                return False, prune_vals
+    return True, prune_vals
 
 
 def ord_mrv(csp):
     """ return variable according to the Minimum Remaining Values heuristic """
-    # IMPLEMENT
+    vars = csp.get_all_vars()
+    sorted(vars, key=lambda var: var.cur_domain_size())
+    return vars

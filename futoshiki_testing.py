@@ -8,13 +8,18 @@ test_model = True
 board_1 = [[1, '<', 0, '.', 0], [0, '.', 0, '.', 2], [2, '.', 0, '>', 0]]
 answer_1 = [1, 2, 3, 3, 1, 2, 2, 3, 1]
 board_2 = [[1, '>', 0, '.', 3], [0, '.', 0, '.', 0], [3, '<', 0, '.', 1]]
-
+board_3 = [[0, '>', 0, '.', 0, '>', 0, '>', 0],
+          [4, '.', 0, '.', 0, '.', 0, '.', 2],
+          [0, '.', 0, '.', 4, '.', 0, '.', 0],
+          [0, '.', 0, '.', 0, '.', 0, '<', 4],
+          [0, '<', 0, '<', 0, '.', 0, '.', 0],
+          ]
 if __name__ == "__main__":
 
     if test_model:
         score = 1
         # 1st model test
-        csp, var_array = futoshiki_csp_model_2(board_1)
+        csp, var_array = futoshiki_csp_model_1(board_1)
         solver = BT(csp)
         solver.bt_search(prop_BT)
         sol = []
@@ -27,10 +32,10 @@ if __name__ == "__main__":
             print("Failed first model test: wrong solution")
         # 2nd model test
         csp2, var_array2 = futoshiki_csp_model_1(board_2)
-        solver = BT(csp)
+        solver = BT(csp2)
         solver.bt_search(prop_BT)
-        for i in range(len(var_array)):
-            for j in range(len(var_array)):
+        for i in range(len(var_array2)):
+            for j in range(len(var_array2)):
                 if var_array2[i][j].get_assigned_value() is not None:
                     score = 0
         if score == 1:

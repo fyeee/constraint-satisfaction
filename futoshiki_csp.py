@@ -54,7 +54,7 @@ def futoshiki_csp_model_1(futo_grid):
                         greater_sign = True
                     elif futo_grid[row][i * 2 + 1] == "<":
                         less_sign = True
-                for t in itertools.product(dom, dom):
+                for t in itertools.product(vars[row][i].cur_domain(), vars[row][j].cur_domain()):
                     if t[0] != t[1]:
                         if (not greater_sign or t[0] > t[1]) and (not less_sign or t[0] < t[1]):
                             sat_tuples.append(t)
@@ -67,7 +67,7 @@ def futoshiki_csp_model_1(futo_grid):
                 con = Constraint("C(Q({1}, {0}),Q({2}, {0})".format(col + 1, i + 1, j + 1),
                                  [vars[i][col], vars[j][col]])
                 sat_tuples = []
-                for t in itertools.product(dom, dom):
+                for t in itertools.product(vars[i][col].cur_domain(), vars[j][col].cur_domain()):
                     if t[0] != t[1]:
                         sat_tuples.append(t)
                 con.add_satisfying_tuples(sat_tuples)
@@ -96,11 +96,11 @@ def futoshiki_csp_model_2(futo_grid):
             row.append(var)
         vars.append(row)
     cons = []
-    doms = [dom] * size
     # row all-diff constraints
     for i, row in enumerate(vars):
         con = Constraint("Row{0}".format(i + 1), row)
         sat_tuples = []
+        doms = [var.cur_domain() for var in row]
         for t in itertools.product(*doms):
             if len(set(t)) == len(t):
                 sat_tuples.append(t)
@@ -111,6 +111,7 @@ def futoshiki_csp_model_2(futo_grid):
         column = [vars[j][i] for j in range(size)]
         con = Constraint("Column{0}".format(i + 1), column)
         sat_tuples = []
+        doms = [var.cur_domain() for var in column]
         for t in itertools.product(*doms):
             if len(set(t)) == len(t):
                 sat_tuples.append(t)
@@ -119,23 +120,13 @@ def futoshiki_csp_model_2(futo_grid):
     # inequality constraints
     for i in range(size):
         for j in range(len(futo_grid[0])):
-            if futo_grid[i][j] == ">":
+            if futo_grid[i][j] == ">" or futo_grid[i][j] == "<":
                 con = Constraint("Q({0},{1}), Q({0},{2})".format(i, j - 1, j + 1),
                                  [vars[i][(j - 1) // 2], vars[i][(j + 1) // 2]])
                 sat_tuples = []
-                for t in itertools.product(dom, dom):
+                for t in itertools.product(vars[i][(j - 1) // 2].cur_domain(), vars[i][(j + 1) // 2].cur_domain()):
                     if t[0] != t[1]:
-                        if t[0] > t[1]:
-                            sat_tuples.append(t)
-                con.add_satisfying_tuples(sat_tuples)
-                cons.append(con)
-            elif futo_grid[i][j] == "<":
-                con = Constraint("Q({0},{1}), Q({0},{2})".format(i, j - 1, j + 1),
-                                 [vars[i][(j - 1) // 2], vars[i][(j + 1) // 2]])
-                sat_tuples = []
-                for t in itertools.product(dom, dom):
-                    if t[0] != t[1]:
-                        if t[0] < t[1]:
+                        if (futo_grid[i][j] == ">" and t[0] > t[1]) or (futo_grid[i][j] == "<" and t[0] < t[1]):
                             sat_tuples.append(t)
                 con.add_satisfying_tuples(sat_tuples)
                 cons.append(con)
